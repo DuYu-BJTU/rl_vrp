@@ -1,6 +1,7 @@
 import argparse
 from abc import ABC
 
+import random
 import torch
 import gym
 from gym import spaces
@@ -245,7 +246,6 @@ class LVRP(gym.Env, ABC):
             "delivery": deliverys,
             "pickup": pickups
         })
-        self.state = self.get_state()
         if sum(deliverys) == 0:
             done = True
         else:
@@ -254,6 +254,7 @@ class LVRP(gym.Env, ABC):
         reward = self.reward(action)
         self.last_access_rng = self.access.copy()
         self.last_node = idx
+        self.state = self.get_state()
         return self.state, reward, done, {}
 
     def get_state(self):
@@ -270,6 +271,12 @@ class LVRP(gym.Env, ABC):
         distance = np.expand_dims(distance, 0)
         delivery = np.expand_dims(delivery, 0)
         pickup = np.expand_dims(pickup, 0)
+
+        if self.last_node != -1:
+            access[self.last_node] = 2
+        else:
+            last = random.randint(self.locker_num, len(access) - 1)
+            access[last] = 2
         access = np.expand_dims(access, 0)
 
         state = np.concatenate((distance, delivery, pickup, access), axis=0)
