@@ -11,7 +11,7 @@ class DQNet(nn.Module):
         self.h_dim = h_dim
         self.heads = heads
         self.encoder = nn.Sequential(*[
-            nn.Linear(self.input_dim[0], 128), nn.ReLU(inplace=True),
+            nn.Linear(self.input_dim[1], 128), nn.ReLU(inplace=True),
             nn.Linear(128, self.h_dim)
         ])
         self.attn = nn.MultiheadAttention(self.h_dim, self.heads)

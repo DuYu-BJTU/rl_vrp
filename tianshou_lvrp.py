@@ -20,9 +20,9 @@ def model_train(config: dict):
             [lambda: LVRP(config) for _ in range(100)]
     )
 
-    state_shape = env.observation_space["distance"].len * 3
+    state_shape = (env.observation_space["distance"].len, 3)
     action_shape = env.action_space.len
-    net = DQNet(state_shape, action_shape, config["device"])
+    net = DQNet(state_shape, action_shape, 32, 8, config["device"])
     optim = torch.optim.Adam(net.parameters(), lr=1e-3)
 
     policy = ts.policy.DQNPolicy(net, optim, discount_factor=0.9, estimation_step=3, target_update_freq=320)
