@@ -13,16 +13,16 @@ def model_train(config: dict):
     writer = SummaryWriter('log/dqn')
     env = LVRP(config)
 
-    train_envs = ts.env.SubprocVectorEnv(
+    train_envs = ts.env.DummyVectorEnv(
             [lambda: LVRP(config) for _ in range(16)]
     )
-    test_envs = ts.env.SubprocVectorEnv(
+    test_envs = ts.env.DummyVectorEnv(
             [lambda: LVRP(config) for _ in range(100)]
     )
 
     state_shape = (env.observation_space["distance"].len, 3)
     action_shape = env.action_space.len
-    net = DQNet(state_shape, action_shape, 32, 8, config["device"])
+    net = DQNet(state_shape, action_shape, 32, 8, config["device"]).to(device)
     optim = torch.optim.Adam(net.parameters(), lr=1e-3)
 
     policy = ts.policy.DQNPolicy(net, optim, discount_factor=0.9, estimation_step=3, target_update_freq=320)

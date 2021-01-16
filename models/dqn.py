@@ -33,16 +33,19 @@ class DQNet(nn.Module):
         data_in.to(self.device)
 
         batch = data_in.shape[1]
-        src_emb = data_in.shape[-1]
-        batch_in = data_in.reshape((-1, src_emb)).type(torch.float32)
+        src_emb = data_in.shape[0]
+        batch_in = data_in.reshape((-1, src_emb)).type(torch.float32).to(self.device)
 
         access = obs[-1]
-        last_node = np.where(obs[-1] == 2)[1]
-        access[last_node] = 0
-        access = torch.from_numpy(1 - access).unsqueeze(1).expand(len(obs[-1]), self.h_dim).type(torch.bool)
+        last_node = np.array(np.where(obs[-1] == 2))[1]
+        last_node = torch.from_numpy(last_node).unsqueeze(0).unsqueeze(-1).\
+            expand(1, batch, self.h_dim).to(self.device)
+        access[np.where(obs[-1] == 2)] = 0
+        access = torch.from_numpy(1 - access).unsqueeze(1)
+        access = access.repeat(self.heads, 1, 1).type(torch.bool).to(self.device)
 
         emb_out = self.encoder(batch_in).reshape((-1, batch, self.h_dim))
-        query = emb_out[last_node].unsqueeze(0)
+        query = torch.gather(emb_out, 0, last_node)
         attn_out, attn_weight = self.attn(query, emb_out, emb_out, attn_mask=access)
         # bn_out = self.bn((emb_out + attn_out).reshape((-1, self.h_dim)))
         # node_emb = self.bn(bn_out + self.feed(bn_out)).reshape((-1, batch, self.h_dim))
