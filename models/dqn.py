@@ -39,7 +39,7 @@ class DQNet(nn.Module):
         access = obs[-1]
         last_node = np.where(obs[-1] == 2)[1]
         access[last_node] = 0
-        access = torch.from_numpy(1 - access).unsqueeze(1).repeat(self.h_dim).type(torch.bool)
+        access = torch.from_numpy(1 - access).unsqueeze(1).expand(len(obs[-1]), self.h_dim).type(torch.bool)
 
         emb_out = self.encoder(batch_in).reshape((-1, batch, self.h_dim))
         query = emb_out[last_node].unsqueeze(0)
