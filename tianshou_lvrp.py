@@ -32,7 +32,7 @@ def model_train(config: dict):
 
     result = ts.trainer.offpolicy_trainer(
             policy, train_collector, test_collector,
-            max_epoch=20, step_per_epoch=1000, collect_per_step=100,
+            max_epoch=30, step_per_epoch=2000, collect_per_step=100,
             episode_per_test=100, batch_size=64,
             train_fn=lambda epoch, env_step: policy.set_eps(0.1),
             test_fn=lambda epoch, env_step: policy.set_eps(0.05),

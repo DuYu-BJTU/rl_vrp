@@ -273,13 +273,14 @@ class LVRP(gym.Env, ABC):
         pickup = np.expand_dims(pickup, 0)
 
         if self.last_node != -1:
-            access[self.last_node] = 2
+            last = self.last_node
         else:
             last = random.randint(self.locker_num, len(access) - 1)
-            access[last] = 2
         access = np.expand_dims(access, 0)
+        last = np.array([last] * access.shape[1])
+        last = np.expand_dims(last, 0)
 
-        state = np.concatenate((distance, delivery, pickup, access), axis=0)
+        state = np.concatenate((distance, delivery, pickup, access, last), axis=0)
         return state
 
     def delivery_pickup(self, locker_idx):

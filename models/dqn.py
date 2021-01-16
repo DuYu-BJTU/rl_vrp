@@ -36,10 +36,10 @@ class DQNet(nn.Module):
         src_emb = data_in.shape[0]
         batch_in = data_in.reshape((-1, src_emb)).type(torch.float32).to(self.device)
 
-        access = obs[-1]
-        last_node = np.array(np.where(obs[-1] == 2))[1]
+        access = obs[-2]
+        last_node = obs[-1].transpose((1, 0))[0]
         last_node = torch.from_numpy(last_node).unsqueeze(0).unsqueeze(-1).\
-            expand(1, batch, self.h_dim).to(self.device)
+            expand(1, batch, self.h_dim).type(torch.int64).to(self.device)
         access[np.where(obs[-1] == 2)] = 0
         access = torch.from_numpy(1 - access).unsqueeze(1)
         access = access.repeat(self.heads, 1, 1).type(torch.bool).to(self.device)
