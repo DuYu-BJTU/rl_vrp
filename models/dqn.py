@@ -15,13 +15,13 @@ class DQNet(nn.Module):
             nn.Linear(128, self.h_dim)
         ])
         self.attn = nn.MultiheadAttention(self.h_dim, self.heads)
-        self.feed = nn.Sequential(*[
-            nn.Linear(self.h_dim, 512), nn.ReLU(inplace=True),
-            nn.Linear(512, 512), nn.ReLU(inplace=True),
-            nn.Linear(512, self.h_dim)
-        ])
-        self.bn = nn.BatchNorm1d(self.h_dim)
-        self.softmax = nn.Softmax(dim=1)
+        # self.feed = nn.Sequential(*[
+        #     nn.Linear(self.h_dim, 512), nn.ReLU(inplace=True),
+        #     nn.Linear(512, 512), nn.ReLU(inplace=True),
+        #     nn.Linear(512, self.h_dim)
+        # ])
+        # self.bn = nn.BatchNorm1d(self.h_dim)
+        # self.softmax = nn.Softmax(dim=1)
         self.device = device
 
     def forward(self, obs, state=None, info=None):
@@ -49,6 +49,6 @@ class DQNet(nn.Module):
         attn_out, attn_weight = self.attn(query, emb_out, emb_out, attn_mask=access)
         # bn_out = self.bn((emb_out + attn_out).reshape((-1, self.h_dim)))
         # node_emb = self.bn(bn_out + self.feed(bn_out)).reshape((-1, batch, self.h_dim))
-        logits = self.softmax(torch.squeeze(attn_weight))
+        logits = torch.squeeze(attn_weight)
 
         return logits, state
