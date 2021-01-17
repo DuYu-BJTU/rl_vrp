@@ -279,9 +279,8 @@ class LVRP(gym.Env, ABC):
         self.last_node = idx
         self.state = self.get_state()
         cost = self.cost()
-        trace_log = np.pad(np.array(self.trace), (0, 100 - len(self.trace)), 'constant', constant_values=0)
         return self.state, reward, done, {"access": self.access, "last_access": last_access,
-                                          "delivery": deliverys, "trace": trace_log, "done": int(done),
+                                          "delivery": deliverys, "trace": self.trace, "done": int(done),
                                           "cost": cost}
 
     def get_state(self):
