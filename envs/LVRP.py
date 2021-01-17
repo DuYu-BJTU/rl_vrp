@@ -154,7 +154,7 @@ class LVRP(gym.Env, ABC):
         self.loc_inv_d = np.zeros(self.locker_num)
         self.loc_inv_p = np.zeros(self.locker_num)
         time_list = np.zeros(len(self.all_coord))
-        self.trace = [-1]
+        self.trace = list()
 
         total_cus = self.customer_per_locker + self.customer_per_region
 
