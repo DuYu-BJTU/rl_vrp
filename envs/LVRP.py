@@ -341,6 +341,10 @@ class LVRP(gym.Env, ABC):
         access_rng = np.array(access_rng)
         access_idx = np.where(total_tasks[access_rng] != 0)[0]
         access_rng = access_rng[access_idx]
+        if access_rng.size == 0:
+            access_rng = np.where(total_tasks[:self.locker_num] != 0)[0]
+        if access_rng.size == 0:
+            access_rng = np.where(total_tasks != 0)[0]
         access = np.zeros(len(self.all_coord))
         access[access_rng] = 1
         # self.action_space = Integers(access_rng)
