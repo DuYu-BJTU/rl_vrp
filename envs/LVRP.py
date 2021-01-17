@@ -1,5 +1,6 @@
 import argparse
 from abc import ABC
+from copy import deepcopy
 
 import random
 import torch
@@ -61,7 +62,6 @@ class LVRP(gym.Env, ABC):
         self.device = config["device"]
 
         total_cus = self.customer_per_locker + self.customer_per_region
-        idx_range = self.locker_num + self.locker_num * self.customer_per_region
 
         while True:
             lockers, all_customer, split_cus, locker_idx = data_generate(loc=self.locker_num,
@@ -80,6 +80,7 @@ class LVRP(gym.Env, ABC):
         self.loc_coord = lockers
         self.all_coord = np.concatenate((self.loc_coord, self.cus_coord), axis=0)
 
+        idx_range = self.locker_num + self.locker_num * self.customer_per_region
         self.access = np.ones(idx_range)
         self.last_access_rng = np.arange(idx_range)
         self.last_node = -1
@@ -153,6 +154,26 @@ class LVRP(gym.Env, ABC):
         self.loc_inv_d = np.zeros(self.locker_num)
         self.loc_inv_p = np.zeros(self.locker_num)
         time_list = np.zeros(len(self.all_coord))
+        self.trace = [-1]
+
+        total_cus = self.customer_per_locker + self.customer_per_region
+
+        while True:
+            lockers, all_customer, split_cus, locker_idx = data_generate(loc=self.locker_num,
+                                                                         cus=total_cus)
+            counts = list()
+            for idx in range(self.locker_num):
+                counts.append(len(np.where(locker_idx == idx)[0]))
+            if min(counts) > self.customer_per_region:
+                break
+
+        self.deliverys, self.pickups = self.delivery_pickup(locker_idx)
+        self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
+
+        cus_list = [split_cus[idx][:self.customer_per_region] for idx in range(len(split_cus))]  # 送货上门5个点 small sample
+        self.cus_coord = np.concatenate([cus for cus in cus_list], axis=0)
+        self.loc_coord = lockers
+        self.all_coord = np.concatenate((self.loc_coord, self.cus_coord), axis=0)
 
         self.loc_lost_sale = 0
         self.cus_lost_sale = np.zeros(len(self.all_coord))
@@ -173,7 +194,7 @@ class LVRP(gym.Env, ABC):
         # check if the courier inventory is enough for deliverys
         prev_inventory = self.inventory + loc_d
         if prev_inventory > self.INV_MAX:
-            self.observation_space = self.back2dc()
+            self.observation_space = self.back2dc(idx)
             self.trace.append(idx)
         distance = self.observation_space["distance"]
         time_list = self.observation_space["time"]
@@ -236,6 +257,8 @@ class LVRP(gym.Env, ABC):
         self.work += delivery * self.time_from_dc + self.total_pickup * distance[idx]
         self.total_pickup += pickup
 
+        last_access = deepcopy(self.access)
+
         self.access, access_rng = self.get_access(idx)
         loc = np.expand_dims(self.all_coord[idx], 0).repeat(len(self.all_coord), axis=0)
         distance = np.linalg.norm(self.all_coord - loc, axis=1)
@@ -246,7 +269,7 @@ class LVRP(gym.Env, ABC):
             "delivery": deliverys,
             "pickup": pickups
         })
-        if sum(deliverys) == 0:
+        if sum(deliverys) == 0 or 1 not in self.access:
             done = True
         else:
             done = False
@@ -255,7 +278,11 @@ class LVRP(gym.Env, ABC):
         self.last_access_rng = self.access.copy()
         self.last_node = idx
         self.state = self.get_state()
-        return self.state, reward, done, {}
+        cost = self.cost()
+        trace_log = np.pad(np.array(self.trace), (0, 100 - len(self.trace)), 'constant', constant_values=0)
+        return self.state, reward, done, {"access": self.access, "last_access": last_access,
+                                          "delivery": deliverys, "trace": trace_log, "done": int(done),
+                                          "cost": cost}
 
     def get_state(self):
         access = self.observation_space["access"].values.copy()
@@ -281,7 +308,7 @@ class LVRP(gym.Env, ABC):
         last = np.expand_dims(last, 0)
 
         state = np.concatenate((distance, delivery, pickup, access, last), axis=0)
-        return state
+        return torch.from_numpy(state).unsqueeze(0)
 
     def delivery_pickup(self, locker_idx):
         d_c = np.random.randint(1, 7, len(locker_idx))
@@ -307,14 +334,14 @@ class LVRP(gym.Env, ABC):
 
         return d, p
 
-    def back2dc(self):
+    def back2dc(self, loc):
         self.backdc += 1
         deliverys = self.observation_space["delivery"].values
         pickups = self.observation_space["pickup"].values
         time_list = self.observation_space["time"].values
         observation_space = self.at_dc(deliverys, pickups, time_list)
 
-        back_dist = self.observation_space["distance"][0]
+        back_dist = self.observation_space["distance"][loc] * 2
         self.time += back_dist
 
         return observation_space
@@ -368,13 +395,17 @@ class LVRP(gym.Env, ABC):
         }
         return observation_space
 
+    def cost(self):
+        value = self.work / 10 + self.backdc + self.time + self.loc_lost_sale + \
+                sum(self.cus_lost_sale) + sum(self.back_order_cost)
+        return value
+
     def reward(self, action):
         if not self.last_access_rng[action]:
             pns = 1000
         else:
             pns = 0
-        value = self.work / 10 + self.backdc + self.time + self.loc_lost_sale + \
-                sum(self.cus_lost_sale) + sum(self.back_order_cost) + 1e-7
+        value = self.cost() + 1e-7
         return 100 / (value + pns)
 
 
