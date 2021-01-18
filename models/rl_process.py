@@ -11,6 +11,7 @@ import torch.nn.functional as F
 
 from tqdm import tqdm
 
+from envs.LVRP import LVRP
 from models.policy import AttnRouteChoose
 import random
 import gym
@@ -182,3 +183,29 @@ def rl_process(env: gym.Env, config: dict):
     saved_info = {"config": config, "state_dict": policy_net.state_dict(),
                   "optimizer": optimizer.state_dict()}
     torch.save(saved_info, "attn.pth")
+
+
+def rl_eval(epi_num: int):
+    with torch.no_grad():
+        saved_info = torch.load("attn.pth")
+        config = saved_info["config"]
+        env = LVRP(config)
+        policy_net = AttnRouteChoose(config).to(config["device"])
+        policy_net.load_state_dict(saved_info["state_dict"])
+
+        logs = []
+
+        for i_episode in range(epi_num):
+            state = env.reset()
+            for t in count():
+                action = policy_net(state).argmax().view(1, 1)
+                next_state, reward, done, info = env.step(action.item())
+                state = next_state
+                if done:
+                    log = {"cost": env.split_cost(), "trace": env.trace}
+                    logs.append(log)
+                    print("Episode {}:".format(i_episode))
+                    print("Turns: {}".format(t))
+                    print("Cost: {}".format(log["cost"]))
+                    print("Trace: {}\n".format(" -> ".join(log["trace"])))
+                    break

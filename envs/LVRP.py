@@ -271,6 +271,7 @@ class LVRP(gym.Env, ABC):
         })
         if sum(deliverys) == 0 or 1 not in self.access:
             done = True
+            self.observation_space = self.back2dc(idx, end=True)
         else:
             done = False
 
@@ -290,10 +291,6 @@ class LVRP(gym.Env, ABC):
         pickup = self.observation_space["pickup"].values.copy()
 
         loc_idx = np.where(distance == 0)
-        distance = 100 / (distance + 1e-7)
-        distance[loc_idx] = 0
-        if self.last_node != -1:
-            distance = np.exp(distance)
         distance = np.expand_dims(distance, 0)
         delivery = np.expand_dims(delivery, 0)
         pickup = np.expand_dims(pickup, 0)
@@ -333,15 +330,17 @@ class LVRP(gym.Env, ABC):
 
         return d, p
 
-    def back2dc(self, loc):
+    def back2dc(self, loc, end=False):
         self.backdc += 1
         deliverys = self.observation_space["delivery"].values
         pickups = self.observation_space["pickup"].values
         time_list = self.observation_space["time"].values
         observation_space = self.at_dc(deliverys, pickups, time_list)
 
-        back_dist = self.observation_space["distance"][loc] * 2
+        back_dist = self.observation_space["distance"][loc]
         self.time += back_dist
+        if not end:
+            self.time += back_dist
 
         return observation_space
 
@@ -364,11 +363,23 @@ class LVRP(gym.Env, ABC):
             access_rng.remove(region)
         deliverys = self.observation_space["delivery"]
         total_tasks = deliverys.values
+        total_inv = self.loc_inv_d + self.loc_inv_p
         access_rng = np.array(access_rng)
         access_idx = np.where(total_tasks[access_rng] != 0)[0]
         access_rng = access_rng[access_idx]
+        if access_rng.size != 0 and self.locker_num > access_rng[0]:
+            loc_rng = access_rng[np.where(access_rng < self.locker_num)[0]]
+            remove_rng = np.where(total_inv[loc_rng] == self.INV_MAX)[0]
+            access_rng = np.delete(access_rng, remove_rng)
         if access_rng.size == 0:
             access_rng = np.where(total_tasks[:self.locker_num] != 0)[0]
+            rng_inv = total_inv[access_rng]
+            access_rng = access_rng[np.where(rng_inv < self.INV_MAX)[0]]
+        if access_rng.size != 0 and self.locker_num > access_rng[0]:
+            loc_rng = access_rng[np.where(access_rng < self.locker_num)[0]]
+            remove_rng = np.where(total_inv[loc_rng] == self.INV_MAX)[0]
+            access_rng = np.delete(access_rng, remove_rng)
+
         if access_rng.size == 0:
             access_rng = np.where(total_tasks != 0)[0]
         access = np.zeros(len(self.all_coord))
@@ -397,6 +408,16 @@ class LVRP(gym.Env, ABC):
     def cost(self):
         value = self.work / 10 + self.backdc + self.time + self.loc_lost_sale + \
                 sum(self.cus_lost_sale) + sum(self.back_order_cost)
+        return value
+
+    def split_cost(self):
+        value = {
+            "work": self.work,
+            "time": self.time,
+            "turns": self.backdc,
+            "lost_sale": self.loc_lost_sale + sum(self.cus_lost_sale),
+            "back_order": sum(self.back_order_cost)
+        }
         return value
 
     def reward(self, action):
