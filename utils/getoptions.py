@@ -14,11 +14,13 @@ def get_options():
         device = torch.device("cpu")
 
     small_config = {"loc_num": 3,
-                    "cus_num": 4,
+                    "cus_num": 5,
                     "cus_use_loc": 10,
-                    "courier_inv": 30,
-                    "loc_inv": 50,
-                    "fp": 0.1,
+                    "delivery_max": 5,
+                    "pickup_max": 3,
+                    "courier_inv": 80,
+                    "loc_inv": 150,
+                    "fp": 0.15,
                     "fd": 0.05,
                     "device": device}
 
@@ -44,12 +46,12 @@ def get_options():
     parser.add_argument("--dataset", default="small", type=str,
                         choices=["small", "mid", "large"], required=True,
                         dest="size")
-    parser.add_argument("--batch", default=8, type=str, required=False, dest="batch")
-    parser.add_argument("--h_dim", default=32, type=str, required=False, dest="h_dim")
-    parser.add_argument("--heads", default=8, type=str, required=False, dest="heads")
-    parser.add_argument("--update", default=10, type=str, required=False, dest="update_tgt")
-    parser.add_argument("--epi", default=2000, type=str, required=False, dest="episode")
-    parser.add_argument("--epoch", default=30, type=str, required=False, dest="epoch")
+    parser.add_argument("--batch", default=8, type=int, required=False, dest="batch")
+    parser.add_argument("--h_dim", default=32, type=int, required=False, dest="h_dim")
+    parser.add_argument("--heads", default=8, type=int, required=False, dest="heads")
+    parser.add_argument("--update", default=10, type=int, required=False, dest="update_tgt")
+    parser.add_argument("--epi", default=2000, type=int, required=False, dest="episode")
+    parser.add_argument("--epoch", default=30, type=int, required=False, dest="epoch")
     args = parser.parse_args()
 
     if args.size == "small":

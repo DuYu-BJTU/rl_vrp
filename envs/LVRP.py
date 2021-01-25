@@ -52,14 +52,18 @@ class LVRP(gym.Env, ABC):
 
     def __init__(self, config: dict):
         super(LVRP, self).__init__()
-        self.locker_num = config["loc_num"]
-        self.customer_per_region = config["cus_num"]
-        self.customer_per_locker = config["cus_use_loc"]
-        self.INV_MAX = config["courier_inv"]
-        self.LOC_MAX = config["loc_inv"]
-        self.fp = config["fp"]
-        self.fd = config["fd"]
-        self.device = config["device"]
+        self.config = config
+        self.locker_num = self.config["loc_num"]
+        self.customer_per_region = self.config["cus_num"]
+        self.customer_per_locker = self.config["cus_use_loc"]
+        self.rnd_factor = 1
+        self.d_max = self.config["delivery_max"] * self.rnd_factor
+        self.p_max = self.config["pickup_max"] * self.rnd_factor
+        self.INV_MAX = self.config["courier_inv"] * self.rnd_factor
+        self.LOC_MAX = self.config["loc_inv"] * self.rnd_factor
+        self.fp = self.config["fp"] * self.rnd_factor
+        self.fd = self.config["fd"] * self.rnd_factor
+        self.device = self.config["device"]
 
         total_cus = self.customer_per_locker + self.customer_per_region
 
@@ -72,7 +76,7 @@ class LVRP(gym.Env, ABC):
             if min(counts) > self.customer_per_region:
                 break
 
-        self.deliverys, self.pickups = self.delivery_pickup(locker_idx)
+        self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
         self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
 
         cus_list = [split_cus[idx][:self.customer_per_region] for idx in range(len(split_cus))]  # 送货上门5个点 small sample
@@ -167,7 +171,15 @@ class LVRP(gym.Env, ABC):
             if min(counts) > self.customer_per_region:
                 break
 
-        self.deliverys, self.pickups = self.delivery_pickup(locker_idx)
+        self.rnd_factor = random.randint(1, 10)
+        self.d_max = self.config["delivery_max"] * self.rnd_factor
+        self.p_max = self.config["pickup_max"] * self.rnd_factor
+        self.INV_MAX = self.config["courier_inv"] * self.rnd_factor
+        self.LOC_MAX = self.config["loc_inv"] * self.rnd_factor
+        self.fp = self.config["fp"] * self.rnd_factor
+        self.fd = self.config["fd"] * self.rnd_factor
+
+        self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
         self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
 
         cus_list = [split_cus[idx][:self.customer_per_region] for idx in range(len(split_cus))]  # 送货上门5个点 small sample
@@ -306,9 +318,9 @@ class LVRP(gym.Env, ABC):
         state = np.concatenate((distance, delivery, pickup, access, last), axis=0)
         return torch.from_numpy(state).unsqueeze(0)
 
-    def delivery_pickup(self, locker_idx):
-        d_c = np.random.randint(1, 7, len(locker_idx))
-        p_c = np.random.randint(0, 4, len(locker_idx))
+    def delivery_pickup(self, locker_idx, d_max, p_max):
+        d_c = np.random.randint(1, d_max, len(locker_idx))
+        p_c = np.random.randint(0, p_max, len(locker_idx))
 
         lockers_d = list()
         lockers_p = list()

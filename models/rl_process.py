@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import torch
 from torch import optim
 import torch.nn.functional as F
+import numpy as np
 
 from tqdm import tqdm
 
@@ -185,6 +186,63 @@ def rl_process(env: gym.Env, config: dict):
     torch.save(saved_info, "attn.pth")
 
 
+def eval_plt(env: LVRP, env_idx: int, turns: int):
+    plt.figure(figsize=(10, 10), dpi=200)
+    x_dc = 0
+    y_dc = 0
+
+    x_rng, y_rng = env.all_coord.transpose()
+    x_rng = np.append(x_rng, [0])
+    y_rng = np.append(y_rng, [0])
+    x_rng = max(x_rng) - min(x_rng)
+    y_rng = max(y_rng) - min(y_rng)
+    factor = x_rng * y_rng / 90000
+    head_width = 3 * factor
+    head_length = 6 * factor
+    line_width = 0.2 * factor
+
+    node_color = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
+                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink"]
+    random.shuffle(node_color)
+
+    plt.scatter(x_dc, y_dc, s=200, color='k',
+                marker='*', label='DC')
+
+    for idx, (x, y) in enumerate(env.loc_coord):
+        plt.scatter(x, y, color=node_color[idx],
+                    marker=',', label='LOC_{}'.format(idx))
+
+        for cus in range(env.customer_per_region):
+            cus_idx = idx * env.customer_per_region + cus
+            cus_x, cus_y = env.cus_coord[cus_idx]
+            plt.scatter(cus_x, cus_y, color=node_color[idx],
+                        marker='o', label='CUS_{}'.format(idx))
+
+    colors = ['k', 'r', 'y', 'g', 'c', 'b', 'm']
+    color_idx = 0
+
+    for head, end in zip(env.trace[:-1], env.trace[1:]):
+        if head == -1:
+            head_x = head_y = 0
+        else:
+            head_x, head_y = env.all_coord[head]
+        if end == -1:
+            end_x = end_y = 0
+        else:
+            end_x, end_y = env.all_coord[end]
+
+        color = colors[color_idx]
+        plt.arrow(head_x, head_y, end_x - head_x, end_y - head_y,
+                  length_includes_head=True,  # 增加的长度包含箭头部分
+                  head_width=head_width, head_length=head_length, color=color,
+                  linestyle='-', linewidth=line_width)
+
+        if end == -1:
+            color_idx += 1
+
+    plt.savefig("Figure {} Turns: {}".format(env_idx, turns))
+
+
 def rl_eval(epi_num: int):
     with torch.no_grad():
         saved_info = torch.load("attn.pth")
@@ -195,7 +253,7 @@ def rl_eval(epi_num: int):
 
         logs = []
 
-        for i_episode in range(epi_num):
+        for i_episode in tqdm(range(epi_num), desc="Test Epi", total=epi_num):
             state = env.reset()
             for t in count():
                 action = policy_net(state).argmax().view(1, 1)
@@ -204,8 +262,5 @@ def rl_eval(epi_num: int):
                 if done:
                     log = {"cost": env.split_cost(), "trace": env.trace}
                     logs.append(log)
-                    print("Episode {}:".format(i_episode))
-                    print("Turns: {}".format(t))
-                    print("Cost: {}".format(log["cost"]))
-                    print("Trace: {}\n".format(" -> ".join(log["trace"])))
+                    eval_plt(env, i_episode, t)
                     break
