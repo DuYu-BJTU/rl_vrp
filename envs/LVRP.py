@@ -1,6 +1,7 @@
 import argparse
 from abc import ABC
 from copy import deepcopy
+from math import ceil
 
 import random
 import torch
@@ -174,8 +175,8 @@ class LVRP(gym.Env, ABC):
         self.rnd_factor = random.randint(1, 10)
         self.d_max = self.config["delivery_max"] * self.rnd_factor
         self.p_max = self.config["pickup_max"] * self.rnd_factor
-        self.INV_MAX = self.config["courier_inv"] * self.rnd_factor
-        self.LOC_MAX = self.config["loc_inv"] * self.rnd_factor
+        self.INV_MAX = self.config["courier_inv"] * ceil(self.rnd_factor / 3 * 2)
+        self.LOC_MAX = self.config["loc_inv"] * ceil(self.rnd_factor / 3 * 2)
         self.fp = self.config["fp"] * self.rnd_factor
         self.fd = self.config["fd"] * self.rnd_factor
 

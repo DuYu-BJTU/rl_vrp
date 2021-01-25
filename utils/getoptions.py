@@ -25,20 +25,24 @@ def get_options():
                     "device": device}
 
     mid_config = {"loc_num": 5,
-                  "cus_num": 6,
-                  "cus_use_loc": 15,
-                  "courier_inv": 40,
-                  "loc_inv": 75,
-                  "fp": 0.15,
-                  "fd": 0.07,
+                  "cus_num": 10,
+                  "cus_use_loc": 20,
+                  "delivery_max": 5,
+                  "pickup_max": 3,
+                  "courier_inv": 150,
+                  "loc_inv": 150,
+                  "fp": 0.3,
+                  "fd": 0.1,
                   "device": device}
 
     large_config = {"loc_num": 10,
-                    "cus_num": 8,
+                    "cus_num": 10,
                     "cus_use_loc": 20,
-                    "courier_inv": 100,
-                    "loc_inv": 200,
-                    "fp": 0.2,
+                    "delivery_max": 5,
+                    "pickup_max": 3,
+                    "courier_inv": 150,
+                    "loc_inv": 150,
+                    "fp": 0.3,
                     "fd": 0.1,
                     "device": device}
 
@@ -50,7 +54,7 @@ def get_options():
     parser.add_argument("--h_dim", default=32, type=int, required=False, dest="h_dim")
     parser.add_argument("--heads", default=8, type=int, required=False, dest="heads")
     parser.add_argument("--update", default=10, type=int, required=False, dest="update_tgt")
-    parser.add_argument("--epi", default=2000, type=int, required=False, dest="episode")
+    parser.add_argument("--epi", default=20000, type=int, required=False, dest="episode")
     parser.add_argument("--epoch", default=30, type=int, required=False, dest="epoch")
     args = parser.parse_args()
 
