@@ -152,7 +152,7 @@ class LVRP(gym.Env, ABC):
 
         return self.viewer.render(return_rgb_array='rgb_array')
 
-    def reset(self):
+    def reset(self, new=True):
         self.time = 0
         self.work = 0
         self.last_node = -1
@@ -161,32 +161,34 @@ class LVRP(gym.Env, ABC):
         time_list = np.zeros(len(self.all_coord))
         self.trace = list()
 
-        total_cus = self.customer_per_locker + self.customer_per_region
+        if new:
+            total_cus = self.customer_per_locker + self.customer_per_region
 
-        while True:
-            lockers, all_customer, split_cus, locker_idx = data_generate(loc=self.locker_num,
-                                                                         cus=total_cus)
-            counts = list()
-            for idx in range(self.locker_num):
-                counts.append(len(np.where(locker_idx == idx)[0]))
-            if min(counts) > self.customer_per_region:
-                break
+            while True:
+                lockers, all_customer, split_cus, locker_idx = data_generate(loc=self.locker_num,
+                                                                             cus=total_cus)
+                counts = list()
+                for idx in range(self.locker_num):
+                    counts.append(len(np.where(locker_idx == idx)[0]))
+                if min(counts) > self.customer_per_region:
+                    break
 
-        self.rnd_factor = random.randint(1, 10)
-        self.d_max = self.config["delivery_max"] * self.rnd_factor
-        self.p_max = self.config["pickup_max"] * self.rnd_factor
-        self.INV_MAX = self.config["courier_inv"] * ceil(self.rnd_factor / 3 * 2)
-        self.LOC_MAX = self.config["loc_inv"] * ceil(self.rnd_factor / 3 * 2)
-        self.fp = self.config["fp"] * self.rnd_factor
-        self.fd = self.config["fd"] * self.rnd_factor
+            self.rnd_factor = random.randint(1, 10)
+            self.d_max = self.config["delivery_max"] * self.rnd_factor
+            self.p_max = self.config["pickup_max"] * self.rnd_factor
+            self.INV_MAX = self.config["courier_inv"] * ceil(self.rnd_factor / 3 * 2)
+            self.LOC_MAX = self.config["loc_inv"] * ceil(self.rnd_factor / 3 * 2)
+            self.fp = self.config["fp"] * self.rnd_factor
+            self.fd = self.config["fd"] * self.rnd_factor
 
-        self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
-        self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
+            self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
+            self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
 
-        cus_list = [split_cus[idx][:self.customer_per_region] for idx in range(len(split_cus))]  # 送货上门5个点 small sample
-        self.cus_coord = np.concatenate([cus for cus in cus_list], axis=0)
-        self.loc_coord = lockers
-        self.all_coord = np.concatenate((self.loc_coord, self.cus_coord), axis=0)
+            cus_list = [split_cus[idx][:self.customer_per_region] for idx in
+                        range(len(split_cus))]  # 送货上门5个点 small sample
+            self.cus_coord = np.concatenate([cus for cus in cus_list], axis=0)
+            self.loc_coord = lockers
+            self.all_coord = np.concatenate((self.loc_coord, self.cus_coord), axis=0)
 
         self.loc_lost_sale = 0
         self.cus_lost_sale = np.zeros(len(self.all_coord))
@@ -419,8 +421,8 @@ class LVRP(gym.Env, ABC):
         return observation_space
 
     def cost(self):
-        value = self.work / 10 + self.backdc + self.time + self.loc_lost_sale + \
-                sum(self.cus_lost_sale) + sum(self.back_order_cost)
+        value = self.work / 10 + self.backdc + self.time + self.loc_lost_sale / 10 + \
+                sum(self.cus_lost_sale) / 10 + sum(self.back_order_cost) / 10
         return value
 
     def split_cost(self):
