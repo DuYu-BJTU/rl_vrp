@@ -56,6 +56,7 @@ def get_options():
     parser.add_argument("--update", default=10, type=int, required=False, dest="update_tgt")
     parser.add_argument("--epi", default=20000, type=int, required=False, dest="episode")
     parser.add_argument("--epoch", default=30, type=int, required=False, dest="epoch")
+    parser.add_argument("--store", default=100, type=int, required=False, dest="store")
     args = parser.parse_args()
 
     if args.size == "small":
@@ -73,4 +74,5 @@ def get_options():
     config["update_tgt"] = args.update_tgt
     config["epi_num"] = args.episode
     config["epoch"] = args.epoch
+    config["store"] = args.store
     return config

@@ -151,6 +151,8 @@ def rl_process(env: gym.Env, config: dict):
     steps_done = 0
     episode_durations = list()
 
+    store_step = int(config["epi_num"] / config["store"])
+
     for i_episode in tqdm(range(config["epi_num"]), desc="Episode", total=config["epi_num"]):
         # Initialize the environment and state
 
@@ -179,11 +181,12 @@ def rl_process(env: gym.Env, config: dict):
         if i_episode % config["update_tgt"] == 0:
             target_net.load_state_dict(policy_net.state_dict())
 
-    plot_durations(episode_durations)
+        if (i_episode + 1) % store_step == 0:
+            saved_info = {"config": config, "state_dict": policy_net.state_dict(),
+                          "optimizer": optimizer.state_dict()}
+            torch.save(saved_info, "saved/attn_{}.pth".format(i_episode + 1))
 
-    saved_info = {"config": config, "state_dict": policy_net.state_dict(),
-                  "optimizer": optimizer.state_dict()}
-    torch.save(saved_info, "attn.pth")
+    plot_durations(episode_durations)
 
 
 def eval_plt(env: LVRP, env_idx: int, turns: int):
