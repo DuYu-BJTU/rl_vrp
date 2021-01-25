@@ -4,6 +4,7 @@ from itertools import count
 
 import matplotlib
 import matplotlib.pyplot as plt
+import os
 
 import torch
 from torch import optim
@@ -243,7 +244,10 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
         if end == -1:
             color_idx += 1
 
-    plt.savefig("Figure {} Turns: {}".format(env_idx, turns))
+    if not os.path.exists("figure"):
+        os.mkdir("figure")
+    plt.savefig("figure/Figure_{}_Turns_{}.png".format(env_idx, turns))
+    plt.close()
 
 
 def rl_eval(epi_num: int):
@@ -267,3 +271,74 @@ def rl_eval(epi_num: int):
                     logs.append(log)
                     eval_plt(env, i_episode, t)
                     break
+
+
+def seq_plt(x, y, color, name=""):
+    plt.figure()
+    plt.xlabel("Training Episodes")
+    if name:
+        plt.ylabel(name)
+    else:
+        plt.ylabel("Cost")
+    plt.plot(x, y, color=color, marker='o')
+    if not os.path.exists("diagram"):
+        os.mkdir("diagram")
+    plt.savefig("diagram/{}.png".format(name))
+    plt.close()
+
+
+def seq_eval():
+    with torch.no_grad():
+        model_list = os.listdir("saved/")
+        epi_turns = list()
+        for model_name in model_list:
+            epi_turn = int(model_name.split("_")[-1].split(".")[0])
+            epi_turns.append(epi_turn)
+
+        sorted(epi_turns)
+        model_name = "saved/attn_{}.pth".format(epi_turns[0])
+        saved_info = torch.load(model_name)
+        config = saved_info["config"]
+        env = LVRP(config)
+
+        logs = []
+        for epi_turn in tqdm(epi_turns, desc="Seq", total=len(epi_turns)):
+            model_name = "saved/attn_{}.pth".format(epi_turn)
+            saved_info = torch.load(model_name)
+            config = saved_info["config"]
+            policy_net = AttnRouteChoose(config).to(config["device"])
+            policy_net.load_state_dict(saved_info["state_dict"])
+
+            state = env.reset(new=False)
+            for t in count():
+                action = policy_net(state).argmax().view(1, 1)
+                next_state, reward, done, info = env.step(action.item())
+                state = next_state
+                if done:
+                    log = {"cost": env.split_cost(), "trace": env.trace}
+                    logs.append(log)
+                    eval_plt(env, epi_turn, t)
+                    break
+
+        colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
+                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink"]
+        random.shuffle(colors)
+        works = list()
+        for log in logs:
+            works.append(log["cost"]["work"])
+        seq_plt(epi_turns, works, colors[0], "Work Cost")
+
+        time = list()
+        for log in logs:
+            time.append(log["cost"]["time"])
+        seq_plt(epi_turns, time, colors[0], "Time")
+
+        lost_sale = list()
+        for log in logs:
+            lost_sale.append(log["cost"]["lost_sale"])
+        seq_plt(epi_turns, lost_sale, colors[0], "Lost Sale")
+
+        back_order = list()
+        for log in logs:
+            back_order.append(log["cost"]["back_order"])
+        seq_plt(epi_turns, back_order, colors[0], "Back Order")
