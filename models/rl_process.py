@@ -258,7 +258,7 @@ def rl_eval(epi_num: int):
             epi_turn = int(model_name.split("_")[-1].split(".")[0])
             epi_turns.append(epi_turn)
 
-        sorted(epi_turns)
+        epi_turns = sorted(epi_turns)
         model_name = "saved/attn_{}.pth".format(epi_turns[-1])
         saved_info = torch.load(model_name)
         config = saved_info["config"]
