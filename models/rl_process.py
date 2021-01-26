@@ -359,28 +359,28 @@ def seq_eval(env_num: int):
             costs[int(idx / env_num)] += log["total"]
         for idx, cost in enumerate(costs):
             costs[idx] = cost / len(logs)
-        seq_plt(epi_turns, costs, colors[5], "Total Cost")
+        seq_plt(epi_turns, costs, colors[5], "Total Cost", False)
 
         works = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             works[int(idx / env_num)] += log["cost"]["work"]
         for idx, work in enumerate(works):
             works[idx] = work / len(logs)
-        seq_plt(epi_turns, works, colors[0], "Work Cost")
+        seq_plt(epi_turns, works, colors[0], "Work Cost", False)
 
         time = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             time[int(idx / env_num)] += log["cost"]["time"]
         for idx, t in enumerate(time):
             time[idx] = t / len(logs)
-        seq_plt(epi_turns, time, colors[1], "Time")
+        seq_plt(epi_turns, time, colors[1], "Time", False)
 
         lost_sales = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             lost_sales[int(idx / env_num)] += log["cost"]["lost_sale"]
         for idx, lost_sale in enumerate(lost_sales):
             lost_sales[idx] = lost_sale / len(logs)
-        seq_plt(epi_turns, lost_sales, colors[2], "Lost Sale")
+        seq_plt(epi_turns, lost_sales, colors[2], "Lost Sale", False)
 
         back_orders = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
