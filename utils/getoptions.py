@@ -30,7 +30,7 @@ def get_options():
                   "delivery_max": 5,
                   "pickup_max": 3,
                   "courier_inv": 150,
-                  "loc_inv": 150,
+                  "loc_inv": 300,
                   "fp": 0.3,
                   "fd": 0.1,
                   "device": device}
@@ -41,7 +41,7 @@ def get_options():
                     "delivery_max": 5,
                     "pickup_max": 3,
                     "courier_inv": 150,
-                    "loc_inv": 150,
+                    "loc_inv": 300,
                     "fp": 0.3,
                     "fd": 0.1,
                     "device": device}
