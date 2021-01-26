@@ -252,7 +252,15 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
 
 def rl_eval(epi_num: int):
     with torch.no_grad():
-        saved_info = torch.load("attn.pth")
+        model_list = os.listdir("saved/")
+        epi_turns = list()
+        for model_name in model_list:
+            epi_turn = int(model_name.split("_")[-1].split(".")[0])
+            epi_turns.append(epi_turn)
+
+        sorted(epi_turns)
+        model_name = "saved/attn_{}.pth".format(epi_turns[-1])
+        saved_info = torch.load(model_name)
         config = saved_info["config"]
         env = LVRP(config)
         policy_net = AttnRouteChoose(config).to(config["device"])
@@ -267,27 +275,48 @@ def rl_eval(epi_num: int):
                 next_state, reward, done, info = env.step(action.item())
                 state = next_state
                 if done:
-                    log = {"cost": env.split_cost(), "trace": env.trace}
+                    log = {"cost": env.split_cost(), "trace": env.trace, "total": env.cost()}
                     logs.append(log)
                     eval_plt(env, i_episode, t)
                     break
 
+        costs = list()
+        works = list()
+        times = list()
+        lost_sales = list()
+        back_orders = list()
+        for log in logs:
+            costs.append(log["total"])
+            works.append(log["cost"]["work"])
+            times.append(log["cost"]["time"])
+            lost_sales.append(log["cost"]["lost_sale"])
+            back_orders.append(log["cost"]["back_order"])
 
-def seq_plt(x, y, color, name=""):
+        if not os.path.exists("output"):
+            os.mkdir("output")
+        data = [list(range(epi_num)), works, times, lost_sales, back_orders]
+        data = np.array(data)
+        np.savetxt("output/2th.csv", data, delimiter=",")
+
+
+def seq_plt(x, y, color, name="", log=True):
     plt.figure()
     plt.xlabel("Training Episodes")
     if name:
         plt.ylabel(name)
     else:
         plt.ylabel("Cost")
-    plt.plot(x, y, color=color, marker='o')
+    if log:
+        plt.semilogy(x, y, color=color, marker='o')
+    else:
+        plt.plot(x, y, color=color, marker='o')
     if not os.path.exists("diagram"):
         os.mkdir("diagram")
     plt.savefig("diagram/{}.png".format(name))
     plt.close()
 
 
-def seq_eval():
+def seq_eval(env_num: int):
     with torch.no_grad():
         model_list = os.listdir("saved/")
         epi_turns = list()
@@ -299,7 +328,7 @@ def seq_eval():
         model_name = "saved/attn_{}.pth".format(epi_turns[0])
         saved_info = torch.load(model_name)
         config = saved_info["config"]
-        env = LVRP(config)
+        envs = [LVRP(config)] * env_num
 
         logs = []
         for epi_turn in tqdm(epi_turns, desc="Seq", total=len(epi_turns)):
@@ -309,36 +338,59 @@ def seq_eval():
             policy_net = AttnRouteChoose(config).to(config["device"])
             policy_net.load_state_dict(saved_info["state_dict"])
 
-            state = env.reset(new=False)
-            for t in count():
-                action = policy_net(state).argmax().view(1, 1)
-                next_state, reward, done, info = env.step(action.item())
-                state = next_state
-                if done:
-                    log = {"cost": env.split_cost(), "trace": env.trace}
-                    logs.append(log)
-                    eval_plt(env, epi_turn, t)
-                    break
+            for idx, env in enumerate(envs):
+                state = env.reset(new=False)
+                for t in count():
+                    action = policy_net(state).argmax().view(1, 1)
+                    next_state, reward, done, info = env.step(action.item())
+                    state = next_state
+                    if done:
+                        log = {"cost": env.split_cost(), "trace": env.trace, "total": env.cost()}
+                        logs.append(log)
+                        # eval_plt(env, epi_turn, t)
+                        break
 
         colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
                   "seagreen", "cadetblue", "navy", "darkviolet", "deeppink"]
         random.shuffle(colors)
-        works = list()
-        for log in logs:
-            works.append(log["cost"]["work"])
+
+        costs = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            costs[int(idx / env_num)] += log["total"]
+        for idx, cost in enumerate(costs):
+            costs[idx] = cost / len(logs)
+        seq_plt(epi_turns, costs, colors[5], "Total Cost")
+
+        works = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            works[int(idx / env_num)] += log["cost"]["work"]
+        for idx, work in enumerate(works):
+            works[idx] = work / len(logs)
         seq_plt(epi_turns, works, colors[0], "Work Cost")
 
-        time = list()
-        for log in logs:
-            time.append(log["cost"]["time"])
-        seq_plt(epi_turns, time, colors[0], "Time")
+        time = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            time[int(idx / env_num)] += log["cost"]["time"]
+        for idx, t in enumerate(time):
+            time[idx] = t / len(logs)
+        seq_plt(epi_turns, time, colors[1], "Time")
 
-        lost_sale = list()
-        for log in logs:
-            lost_sale.append(log["cost"]["lost_sale"])
-        seq_plt(epi_turns, lost_sale, colors[0], "Lost Sale")
+        lost_sales = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            lost_sales[int(idx / env_num)] += log["cost"]["lost_sale"]
+        for idx, lost_sale in enumerate(lost_sales):
+            lost_sales[idx] = lost_sale / len(logs)
+        seq_plt(epi_turns, lost_sales, colors[2], "Lost Sale")
 
-        back_order = list()
-        for log in logs:
-            back_order.append(log["cost"]["back_order"])
-        seq_plt(epi_turns, back_order, colors[0], "Back Order")
+        back_orders = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            back_orders[int(idx / env_num)] += log["cost"]["back_order"]
+        for idx, back_order in enumerate(back_orders):
+            back_orders[idx] = back_order / len(logs)
+        seq_plt(epi_turns, back_orders, colors[3], "Back Order", False)
+
+        if not os.path.exists("output"):
+            os.mkdir("output")
+        data = [epi_turns, works, time, lost_sales, back_orders]
+        data = np.array(data)
+        np.savetxt("output/4th.csv", data, delimiter=",")
