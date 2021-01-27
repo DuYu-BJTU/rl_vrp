@@ -206,7 +206,9 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
     line_width = 0.2 * factor
 
     node_color = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
-                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink"]
+                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
+                  "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
+                  "green", "lightseagreen", "royalblue", "mediumpurple"]
     random.shuffle(node_color)
 
     plt.scatter(x_dc, y_dc, s=200, color='k',
@@ -222,7 +224,11 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
             plt.scatter(cus_x, cus_y, color=node_color[idx],
                         marker='o', label='CUS_{}'.format(idx))
 
-    colors = ['k', 'r', 'y', 'g', 'c', 'b', 'm']
+    colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
+              "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
+              "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
+              "green", "lightseagreen", "royalblue", "mediumpurple"]
+    random.shuffle(colors)
     color_idx = 0
 
     for head, end in zip(env.trace[:-1], env.trace[1:]):
@@ -355,7 +361,9 @@ def seq_eval(env_num: int):
                         break
 
         colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
-                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink"]
+                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
+                  "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
+                  "green", "lightseagreen", "royalblue", "mediumpurple"]
         random.shuffle(colors)
 
         costs = [0.0] * len(epi_turns)
