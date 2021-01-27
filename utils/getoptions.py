@@ -18,8 +18,8 @@ def get_options():
                     "cus_use_loc": 10,
                     "delivery_max": 5,
                     "pickup_max": 3,
-                    "courier_inv": 80,
-                    "loc_inv": 150,
+                    "courier_inv": 50,
+                    "loc_inv": 80,
                     "fp": 0.15,
                     "fd": 0.05,
                     "device": device}
@@ -29,8 +29,8 @@ def get_options():
                   "cus_use_loc": 20,
                   "delivery_max": 5,
                   "pickup_max": 3,
-                  "courier_inv": 150,
-                  "loc_inv": 300,
+                  "courier_inv": 80,
+                  "loc_inv": 100,
                   "fp": 0.3,
                   "fd": 0.1,
                   "device": device}
@@ -40,8 +40,8 @@ def get_options():
                     "cus_use_loc": 20,
                     "delivery_max": 5,
                     "pickup_max": 3,
-                    "courier_inv": 150,
-                    "loc_inv": 300,
+                    "courier_inv": 80,
+                    "loc_inv": 100,
                     "fp": 0.3,
                     "fd": 0.1,
                     "device": device}

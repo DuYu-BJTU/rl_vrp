@@ -262,6 +262,8 @@ def rl_eval(epi_num: int):
         model_name = "saved/attn_{}.pth".format(epi_turns[-1])
         saved_info = torch.load(model_name)
         config = saved_info["config"]
+        config["courier_inv"] = 60
+        config["loc_inv"] = 100
         env = LVRP(config)
         policy_net = AttnRouteChoose(config).to(config["device"])
         policy_net.load_state_dict(saved_info["state_dict"])
@@ -328,6 +330,8 @@ def seq_eval(env_num: int):
         model_name = "saved/attn_{}.pth".format(epi_turns[0])
         saved_info = torch.load(model_name)
         config = saved_info["config"]
+        config["courier_inv"] = 60
+        config["loc_inv"] = 100
         envs = [LVRP(config)] * env_num
 
         logs = []
