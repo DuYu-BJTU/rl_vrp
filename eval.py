@@ -1,5 +1,6 @@
 from models.rl_process import rl_eval, seq_eval
 from itertools import count
+from mail import send_mail
 
 if __name__ == '__main__':
     for t in count():
@@ -10,3 +11,4 @@ if __name__ == '__main__':
         else:
             break
     # rl_eval(10)
+    send_mail("Evaluate Done.")
