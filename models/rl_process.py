@@ -360,32 +360,31 @@ def seq_eval(env_num: int):
                         # eval_plt(env, epi_turn, t)
                         break
 
-        colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
-                  "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
-                  "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
-                  "green", "lightseagreen", "royalblue", "mediumpurple"]
-        random.shuffle(colors)
+        colors = ["red", "orange", "palegreen", "navy", "darkviolet"]
+
+        back_orders = [0.0] * len(epi_turns)
+        for idx, log in enumerate(logs):
+            back_orders[int(idx / env_num)] += log["cost"]["back_order"]
+            if sum(back_orders) == 0:
+                return "1st back_order"
 
         costs = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             costs[int(idx / env_num)] += log["total"]
-        for idx, cost in enumerate(costs):
-            costs[idx] = cost / env_num
-        seq_plt(epi_turns, costs, colors[5], "Total Cost", False)
+            if costs[-1] != min(costs):
+                return "2nd Total"
 
         works = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             works[int(idx / env_num)] += log["cost"]["work"]
-        for idx, work in enumerate(works):
-            works[idx] = work / env_num
-        seq_plt(epi_turns, works, colors[0], "Work Cost", False)
+            if works[-1] != min(works):
+                return "3rd Work"
 
         time = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
             time[int(idx / env_num)] += log["cost"]["time"]
-        for idx, t in enumerate(time):
-            time[idx] = t / env_num
-        seq_plt(epi_turns, time, colors[1], "Time", False)
+            if time[-1] != min(time):
+                return "4th Time"
 
         lost_sales = [0.0] * len(epi_turns)
         for idx, log in enumerate(logs):
@@ -394,15 +393,26 @@ def seq_eval(env_num: int):
             lost_sales[idx] = lost_sale / env_num
         seq_plt(epi_turns, lost_sales, colors[2], "Lost Sale", False)
 
-        back_orders = [0.0] * len(epi_turns)
-        for idx, log in enumerate(logs):
-            back_orders[int(idx / env_num)] += log["cost"]["back_order"]
+        for idx, cost in enumerate(costs):
+            costs[idx] = cost / env_num
+        seq_plt(epi_turns, costs, colors[5], "Total Cost", False)
+
         for idx, back_order in enumerate(back_orders):
             back_orders[idx] = back_order / env_num
         seq_plt(epi_turns, back_orders, colors[3], "Back Order", False)
+
+        for idx, work in enumerate(works):
+            works[idx] = work / env_num
+        seq_plt(epi_turns, works, colors[0], "Work Cost", False)
+
+        for idx, t in enumerate(time):
+            time[idx] = t / env_num
+        seq_plt(epi_turns, time, colors[1], "Time", False)
 
         if not os.path.exists("output"):
             os.mkdir("output")
         data = [epi_turns, works, time, lost_sales, back_orders]
         data = np.array(data)
         np.savetxt("output/4th.csv", data, delimiter=",")
+
+        return False

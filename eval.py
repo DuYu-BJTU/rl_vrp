@@ -1,5 +1,12 @@
 from models.rl_process import rl_eval, seq_eval
+from itertools import count
 
 if __name__ == '__main__':
-    rl_eval(10)
-    seq_eval(10)
+    for t in count():
+        print("{} Turn Eval".format(t))
+        flg = seq_eval(10)
+        if flg:
+            print("Break down at {}".format(flg))
+        else:
+            break
+    # rl_eval(10)
