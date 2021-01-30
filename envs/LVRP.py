@@ -78,7 +78,8 @@ class LVRP(gym.Env, ABC):
                 break
 
         self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
-        self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
+        # self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
+        self.remain_locker_pickup = deepcopy(self.pickups[0: self.locker_num])
 
         cus_list = [split_cus[idx][:self.customer_per_region] for idx in range(len(split_cus))]  # 送货上门5个点 small sample
         self.cus_coord = np.concatenate([cus for cus in cus_list], axis=0)
@@ -182,13 +183,15 @@ class LVRP(gym.Env, ABC):
             self.fd = self.config["fd"] * self.rnd_factor
 
             self.deliverys, self.pickups = self.delivery_pickup(locker_idx, self.d_max, self.p_max)
-            self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
+            # self.max_locker_pick_time = self.pickups[0: self.locker_num] / self.fd
 
             cus_list = [split_cus[idx][:self.customer_per_region] for idx in
                         range(len(split_cus))]  # 送货上门5个点 small sample
             self.cus_coord = np.concatenate([cus for cus in cus_list], axis=0)
             self.loc_coord = lockers
             self.all_coord = np.concatenate((self.loc_coord, self.cus_coord), axis=0)
+
+        self.remain_locker_pickup = deepcopy(self.pickups[0: self.locker_num])
 
         self.loc_lost_sale = 0
         self.cus_lost_sale = np.zeros(len(self.all_coord))
@@ -219,7 +222,8 @@ class LVRP(gym.Env, ABC):
         # calculate lockers pick up amount
         if idx in range(self.locker_num):
             # customers pick up their packages first
-            self.loc_inv_d[idx] -= self.fp * (self.time - time_list[idx])
+            # self.loc_inv_d[idx] -= self.fp * (self.time - time_list[idx])
+            self.loc_inv_d[idx] -= sum(np.random.poisson(self.fp, ceil(self.time - time_list[idx])))
             if self.loc_inv_d[idx] < 0:
                 self.loc_inv_d[idx] = 0
 
@@ -227,15 +231,14 @@ class LVRP(gym.Env, ABC):
             capacity = self.LOC_MAX - self.loc_inv_d[idx] - self.loc_inv_p[idx]
 
             # calculate how many packages customers can put into the locker
-            if self.max_locker_pick_time[idx] >= self.time >= time_list[idx]:
-                self.loc_cache[idx] = min(int(self.fd * (self.time - time_list[idx])), capacity)
-            elif self.time >= self.max_locker_pick_time[idx] >= time_list[idx]:
-                self.loc_cache[idx] = min(int(self.fd * (self.max_locker_pick_time[idx] - time_list[idx])), capacity)
-            else:
-                self.loc_cache[idx] = 0
+            pickup = int(sum(np.random.poisson(self.fd, ceil(self.time - time_list[idx]))))
+            if pickup > self.remain_locker_pickup[idx]:
+                pickup = self.remain_locker_pickup[idx]
+            self.remain_locker_pickup[idx] -= pickup
+            self.loc_cache[idx] = min(pickup, capacity)
 
             # packages failed to be delivered will become lost sale punishment
-            self.loc_lost_sale += max(int(self.fd * (self.time - time_list[idx]) - self.loc_cache[idx]), 0)
+            self.loc_lost_sale += max(pickup - self.loc_cache[idx], 0)
 
             # put packages into lockers
             self.loc_inv_p[idx] += self.loc_cache[idx]
