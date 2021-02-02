@@ -17,6 +17,7 @@ from envs.LVRP import LVRP
 from models.policy import AttnRouteChoose
 import random
 import gym
+import time
 
 # # set up matplotlib
 # is_ipython = 'inline' in matplotlib.get_backend()
@@ -275,14 +276,17 @@ def rl_eval(epi_num: int):
         policy_net.load_state_dict(saved_info["state_dict"])
 
         logs = []
+        times = []
 
         for i_episode in tqdm(range(epi_num), desc="Test Epi", total=epi_num):
             state = env.reset()
+            start = time.time()
             for t in count():
                 action = policy_net(state).argmax().view(1, 1)
                 next_state, reward, done, info = env.step(action.item())
                 state = next_state
                 if done:
+                    times.append(time.time() - start)
                     log = {"cost": env.split_cost(), "trace": env.trace, "total": env.cost()}
                     logs.append(log)
                     eval_plt(env, i_episode, t)
@@ -305,6 +309,8 @@ def rl_eval(epi_num: int):
         data = [list(range(epi_num)), works, times, lost_sales, back_orders]
         data = np.array(data)
         np.savetxt("output/2th.csv", data, delimiter=",")
+        times = np.array(times)
+        np.savetxt("output/times.csv", times, delimiter=",")
 
 
 def seq_plt(x, y, color, name="", log=True):
