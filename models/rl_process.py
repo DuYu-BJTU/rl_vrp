@@ -203,11 +203,11 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
     x_rng = max(x_rng) - min(x_rng)
     y_rng = max(y_rng) - min(y_rng)
     factor = x_rng * y_rng / 90000
-    head_width = 3 * factor
-    head_length = 6 * factor
+    head_width = 1.5 * factor
+    head_length = 3 * factor
     line_width = 0.2 * factor
 
-    node_color = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
+    node_color = ["red", "chocolate", "orange", "olive", "palegreen",
                   "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
                   "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
                   "green", "lightseagreen", "royalblue", "mediumpurple"]
@@ -226,7 +226,7 @@ def eval_plt(env: LVRP, env_idx: int, turns: int):
             plt.scatter(cus_x, cus_y, color=node_color[idx],
                         marker='o', label='CUS_{}'.format(idx))
 
-    colors = ["red", "chocolate", "orange", "olive", "yellow", "palegreen",
+    colors = ["red", "chocolate", "orange", "olive", "palegreen",
               "seagreen", "cadetblue", "navy", "darkviolet", "deeppink",
               "coral", "saddlebrown", "tan", "goldenrod", "yellowgreen",
               "green", "lightseagreen", "royalblue", "mediumpurple"]
